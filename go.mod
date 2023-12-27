@@ -1,4 +1,4 @@
-module github.com/itishrishikesh/gortc
+module gortc
 
 go 1.21.5
 
@@ -6,6 +6,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.51.0
 	github.com/gofiber/template/html/v2 v2.0.5
 	github.com/gofiber/websocket v0.5.1
+	github.com/gofiber/websocket/v2 v2.2.1
 	github.com/google/uuid v1.5.0
 )
 
@@ -15,7 +16,6 @@ require (
 	github.com/gofiber/fiber v1.14.6 // indirect
 	github.com/gofiber/template v1.8.2 // indirect
 	github.com/gofiber/utils v1.1.0 // indirect
-	github.com/gofiber/websocket/v2 v2.2.1
 	github.com/gorilla/schema v1.1.0 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
