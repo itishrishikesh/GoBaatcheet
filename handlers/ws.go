@@ -23,7 +23,6 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	username := getRandomUsername()
 	users[ws] = username
 	fmt.Println("I#1PZUGS - Websocket Connection is assigned a random username:", username)
-	err = ws.WriteMessage(1, []byte("Connected with GoBaatcheet!"))
 	if err != nil {
 		fmt.Println("E#1PZUJN - Error while writing message back to client!")
 	}
@@ -38,12 +37,11 @@ func getRandomUsername() string {
 
 func reader(conn *websocket.Conn) {
 	for {
-		messageType, p, err := conn.ReadMessage()
+		_, p, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Println("E#1PZUA7 - Error while reading message!")
 			return
 		}
-
 		for receiver, username := range users {
 			if strings.EqualFold(username, users[conn]) {
 				continue
@@ -54,11 +52,6 @@ func reader(conn *websocket.Conn) {
 				Receiver: username,
 			}
 			receiver.WriteJSON(message)
-		}
-
-		if err := conn.WriteMessage(messageType, p); err != nil {
-			fmt.Println("E#1PZUDM - Error while writing message!")
-			return
 		}
 	}
 }
