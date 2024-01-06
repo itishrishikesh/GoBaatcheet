@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/itishrishikesh/GoBaatcheet/handlers"
+	"GoBaatcheet/handlers"
 )
 
 const port = "8080"

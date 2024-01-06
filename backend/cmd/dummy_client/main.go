@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	"GoBaatcheet/models"
+
 	"github.com/gorilla/websocket"
-	"github.com/itishrishikesh/GoBaatcheet/models"
 )
 
 func main() {

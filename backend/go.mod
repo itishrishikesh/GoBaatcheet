@@ -1,4 +1,4 @@
-module github.com/itishrishikesh/GoBaatcheet
+module GoBaatcheet
 
 go 1.21.5
 

@@ -6,10 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"GoBaatcheet/config"
+	"GoBaatcheet/models"
+
 	"github.com/goombaio/namegenerator"
 	"github.com/gorilla/websocket"
-	"github.com/itishrishikesh/GoBaatcheet/config"
-	"github.com/itishrishikesh/GoBaatcheet/models"
 )
 
 var users map[*websocket.Conn]string = make(map[*websocket.Conn]string)
