@@ -1,3 +1,3 @@
-export const  ChatHolder = () => {
-    return <div>Chatholder!</div>;
+export const  ChatHolder = (props: {messages: string[]}) => {
+    return <div>{...props.messages}</div>;
 }
