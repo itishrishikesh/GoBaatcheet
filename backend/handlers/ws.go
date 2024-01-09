@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"GoBaatcheet/config"
@@ -13,7 +12,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var users map[*websocket.Conn]string = make(map[*websocket.Conn]string)
+var users map[string]*websocket.Conn = make(map[string]*websocket.Conn)
 
 func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	config.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
@@ -21,13 +20,22 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println("E#1PZU6V - Failed to upgrade request to websocket connection!")
 	}
-	username := getRandomUsername()
-	users[ws] = username
-	fmt.Println("I#1PZUGS - Websocket Connection is assigned a random username:", username)
+	users[readOrAssignUsername(ws)] = ws
 	if err != nil {
 		fmt.Println("E#1PZUJN - Error while writing message back to client!")
 	}
 	reader(ws)
+}
+
+func readOrAssignUsername(conn *websocket.Conn) string {
+	var user models.User
+	err := conn.ReadJSON(&user)
+	if err != nil {
+		fmt.Println("E#1QENH1 - Unable to read username from websocket connection.", err)
+		return getRandomUsername()
+	}
+	fmt.Println("TMP log:", user)
+	return user.Username
 }
 
 func getRandomUsername() string {
@@ -38,21 +46,17 @@ func getRandomUsername() string {
 
 func reader(conn *websocket.Conn) {
 	for {
-		_, p, err := conn.ReadMessage()
+		var msg models.Message
+		err := conn.ReadJSON(&msg)
 		if err != nil {
-			fmt.Println("E#1PZUA7 - Error while reading message!")
+			fmt.Println("E#1PZUA7 - Error while reading message for user:", msg.Sender)
 			return
 		}
-		for receiver, username := range users {
-			if strings.EqualFold(username, users[conn]) {
-				continue
-			}
-			message := models.Message{
-				Msg:      string(p),
-				Sender:   users[conn],
-				Receiver: username,
-			}
-			receiver.WriteJSON(message)
+		msgToSend := models.Message{
+			Sender:   msg.Sender,
+			Receiver: msg.Receiver,
+			Msg:      msg.Msg,
 		}
+		users[msg.Sender].WriteJSON(msgToSend)
 	}
 }
