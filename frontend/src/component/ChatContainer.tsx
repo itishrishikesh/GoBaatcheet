@@ -1,16 +1,9 @@
-import React, { useState } from "react";
 import { ChatHolder } from "./ChatHolder";
 import { ChatSender } from "./ChatSender";
 
-export const  ChatContainer = () => {
-    const [messages, setMessages]  = useState<string[]>([])
-
-    const send = (message: string) => {
-        setMessages(prev => [...prev, message])
-    }
-
+export const  ChatContainer = (props: {messages: string[], send: any}) => {
     return <div>
-        <ChatHolder messages={messages}/>
-        <ChatSender send={send}/>
+        <ChatHolder messages={props.messages}/>
+        <ChatSender send={props.send}/>
     </div>;
 }
