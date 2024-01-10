@@ -49,7 +49,7 @@ func reader(conn *websocket.Conn) {
 		var msg models.Message
 		err := conn.ReadJSON(&msg)
 		if err != nil {
-			fmt.Println("E#1PZUA7 - Error while reading message for user:", msg.Sender)
+			fmt.Println("E#1PZUA7 - Error while reading message for user:", msg.Sender, err)
 			return
 		}
 		msgToSend := models.Message{
@@ -57,6 +57,6 @@ func reader(conn *websocket.Conn) {
 			Receiver: msg.Receiver,
 			Msg:      msg.Msg,
 		}
-		users[msg.Sender].WriteJSON(msgToSend)
+		users[msg.Receiver].WriteJSON(msgToSend)
 	}
 }
