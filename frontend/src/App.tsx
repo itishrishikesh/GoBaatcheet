@@ -8,7 +8,7 @@ function App() {
   const [username, setUsername] = useState<string>("")
   const [receiver, setReceiver] = useState<string>("")
   const [websocket, setWebsocket] = useState<WebSocket>()
-  const [messages, setMessages] = useState<string[]>([])
+  const [messages, setMessages] = useState<Message[]>([])
 
   const logIn = () => {
     const localUsername: string | null = prompt("enter username")
@@ -20,7 +20,7 @@ function App() {
       return;
     }
     ws.addEventListener("open", () => ws.send(JSON.stringify(new User(localUsername ?? ""))))
-    ws.addEventListener("message", (event) => setMessages(prev => [...prev, JSON.parse(event.data).message]))
+    ws.addEventListener("message", (event) => setMessages(prev => [...prev, JSON.parse(event.data)]))
   }
 
   const changeReceiver = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,14 +34,14 @@ function App() {
     }
     const msgToSend = new Message(message, username, receiver)
     websocket.send(JSON.stringify(msgToSend))
-    setMessages(prev => [...prev, message])
+    setMessages(prev => [...prev, msgToSend])
   }
 
   return (
     <>
       {
         username.length ?
-          <div>
+          <div className="parent">
             <h4>GoBaatcheet</h4>
             <UsernameHolder sender={username} receiver={receiver} changeReceiver={changeReceiver} />
             <hr />
@@ -49,7 +49,7 @@ function App() {
             <ChatContainer send={send} messages={messages} />
           </div>
           :
-          <div>Please <button onClick={() => logIn()}>enter</button> username!</div>
+          <div>Please  <button onClick={() => logIn()}>click here and enter</button> username!</div>
       }
     </>
   )
