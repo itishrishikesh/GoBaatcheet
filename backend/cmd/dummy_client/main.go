@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Todo: Delete or modify this function!
 func main() {
 	// Establish Connection.
 	var url string
