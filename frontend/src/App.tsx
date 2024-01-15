@@ -3,12 +3,14 @@ import { UsernameHolder } from './component/UsernameHolder'
 import { ChatContainer } from './component/ChatContainer'
 import { User } from './models/User'
 import { Message } from './models/Message'
+import { Authorizer, useAuthorizer } from '@authorizerdev/authorizer-react'
 
 function App() {
   const [username, setUsername] = useState<string>("")
   const [receiver, setReceiver] = useState<string>("")
   const [websocket, setWebsocket] = useState<WebSocket>()
   const [messages, setMessages] = useState<Message[]>([])
+  const {} user } = useAuthorizer()
 
   const logIn = () => {
     const localUsername: string | null = prompt("enter username")
@@ -49,7 +51,8 @@ function App() {
             <ChatContainer send={send} messages={messages} />
           </div>
           :
-          <div>Please  <button onClick={() => logIn()}>click here and enter</button> username!</div>
+          // <div>Please  <button onClick={() => logIn()}>click here and enter</button> username!</div>
+          <Authorizer />
       }
     </>
   )
