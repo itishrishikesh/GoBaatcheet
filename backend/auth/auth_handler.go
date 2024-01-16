@@ -1,13 +1,13 @@
 package auth
 
 import (
+	"log"
 	"net/http"
-	"strings"
 
 	authorizer "github.com/authorizerdev/authorizer-go"
 )
 
-func authenticate(request *http.Request) bool {
+func Authenticate(request *http.Request) bool {
 	defaultHeaders := map[string]string{}
 	client, err := authorizer.NewAuthorizerClient("c87ad9f9-e076-429f-b175-777e73570a9b", "http://localhost:8082/", "", defaultHeaders)
 
@@ -15,21 +15,24 @@ func authenticate(request *http.Request) bool {
 		panic(err)
 	}
 
-	header := request.Header.Get("Authorization")
-	token := strings.Split(header, " ")
+	token := request.URL.Query().Get("access_token")
 
-	if len(token) < 2 || token[1] == "" {
+	log.Println("Access token", token)
+
+	if token == "" {
 		return false
 	}
 
 	response, err := client.ValidateJWTToken(&authorizer.ValidateJWTTokenInput{
 		TokenType: authorizer.TokenTypeIDToken,
-		Token:     token[1],
+		Token:     token,
 	})
 
 	if err != nil {
 		panic(err)
 	}
+
+	log.Println("Validated Token", response)
 
 	return response.IsValid
 }

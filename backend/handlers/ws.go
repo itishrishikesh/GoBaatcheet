@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
+	"GoBaatcheet/auth"
 	"GoBaatcheet/config"
 	"GoBaatcheet/models"
 
@@ -12,30 +14,35 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var users map[string]*websocket.Conn = make(map[string]*websocket.Conn)
+var connectedUsers map[string]*websocket.Conn = make(map[string]*websocket.Conn)
 
 func WsEndpoint(w http.ResponseWriter, r *http.Request) {
+	if !auth.Authenticate(r) {
+		w.WriteHeader(401)
+	}
 	config.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	ws, err := config.Upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Println("E#1PZU6V - Failed to upgrade request to websocket connection!")
+		log.Fatalln("E#1PZU6V - Failed to upgrade request to websocket connection!", err)
 	}
-	users[readOrAssignUsername(ws)] = ws
+	username, err := readOrAssignUsername(ws)
 	if err != nil {
-		fmt.Println("E#1PZUJN - Error while writing message back to client!")
+		log.Fatalln("")
+	}
+	connectedUsers[username] = ws
+	if err != nil {
+		log.Println("E#1PZUJN - Error while writing message back to client!")
 	}
 	reader(ws)
 }
 
-func readOrAssignUsername(conn *websocket.Conn) string {
+func readOrAssignUsername(conn *websocket.Conn) (string, error) {
 	var user models.User
 	err := conn.ReadJSON(&user)
 	if err != nil {
-		fmt.Println("E#1QENH1 - Unable to read username from websocket connection.", err)
-		return getRandomUsername()
+		return "", fmt.Errorf("E#1QENH1 - Unable to read username from websocket connection. %v", err)
 	}
-	fmt.Println("TMP log:", user)
-	return user.Username
+	return user.Username, nil
 }
 
 func getRandomUsername() string {
@@ -49,7 +56,7 @@ func reader(conn *websocket.Conn) {
 		var msg models.Message
 		err := conn.ReadJSON(&msg)
 		if err != nil {
-			fmt.Println("E#1PZUA7 - Error while reading message for user:", msg.Sender, err)
+			log.Println("E#1PZUA7 - Error while reading message for user:", msg.Sender, err)
 			return
 		}
 		msgToSend := models.Message{
@@ -57,6 +64,6 @@ func reader(conn *websocket.Conn) {
 			Receiver: msg.Receiver,
 			Msg:      msg.Msg,
 		}
-		users[msg.Receiver].WriteJSON(msgToSend)
+		connectedUsers[msg.Receiver].WriteJSON(msgToSend)
 	}
 }
