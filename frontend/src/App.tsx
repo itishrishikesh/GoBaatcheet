@@ -3,19 +3,19 @@ import { UsernameHolder } from './component/UsernameHolder'
 import { ChatContainer } from './component/ChatContainer'
 import { User } from './models/User'
 import { Message } from './models/Message'
-import { Authorizer, useAuthorizer } from '@authorizerdev/authorizer-react'
+import { Authorizer, AuthorizerProvider, useAuthorizer } from '@authorizerdev/authorizer-react'
 
 function App() {
   const [username, setUsername] = useState<string>("")
   const [receiver, setReceiver] = useState<string>("")
   const [websocket, setWebsocket] = useState<WebSocket>()
   const [messages, setMessages] = useState<Message[]>([])
-  const {} user } = useAuthorizer()
 
-  const logIn = () => {
-    const localUsername: string | null = prompt("enter username")
-    const ws = new WebSocket("ws://localhost:8080/ws")
-    setUsername(localUsername ?? "")
+  const setupConnection = (response: any) => {
+    console.log(response)
+    const localUsername = response.user.email
+    const ws = new WebSocket("ws://localhost:8080/ws?access_token=" + response.access_token);
+    setUsername(localUsername)
     setWebsocket(ws)
     if(!ws) {
       console.error("E#1QGGEL - Websocket connection is null!")
@@ -52,7 +52,16 @@ function App() {
           </div>
           :
           // <div>Please  <button onClick={() => logIn()}>click here and enter</button> username!</div>
-          <Authorizer />
+          <AuthorizerProvider 
+            config={{
+              authorizerURL: 'http://localhost:8082',
+              redirectURL: window.location.origin,
+              clientID: 'c87ad9f9-e076-429f-b175-777e73570a9b'
+            }}>
+
+            <Authorizer onLogin={(response) => setupConnection(response)} onSignup={(response) => setupConnection(response)} />
+            
+          </AuthorizerProvider>
       }
     </>
   )
