@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"GoBaatcheet/auth"
 	"GoBaatcheet/config"
+	"GoBaatcheet/constants"
 	"GoBaatcheet/models"
 
-	"github.com/goombaio/namegenerator"
 	"github.com/gorilla/websocket"
 )
 
@@ -18,7 +17,7 @@ var connectedUsers map[string]*websocket.Conn = make(map[string]*websocket.Conn)
 
 func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	if !auth.Authenticate(r) {
-		w.WriteHeader(401)
+		w.WriteHeader(constants.HTTP_FORBIDDEN)
 	}
 	config.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	ws, err := config.Upgrader.Upgrade(w, r, nil)
@@ -27,13 +26,13 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 	username, err := readOrAssignUsername(ws)
 	if err != nil {
-		log.Fatalln("")
+		log.Fatalln(err)
 	}
 	connectedUsers[username] = ws
 	if err != nil {
 		log.Println("E#1PZUJN - Error while writing message back to client!")
 	}
-	reader(ws)
+	messageListener(ws)
 }
 
 func readOrAssignUsername(conn *websocket.Conn) (string, error) {
@@ -45,13 +44,7 @@ func readOrAssignUsername(conn *websocket.Conn) (string, error) {
 	return user.Username, nil
 }
 
-func getRandomUsername() string {
-	seed := time.Now().UTC().UnixNano()
-	nameGenerator := namegenerator.NewNameGenerator(seed)
-	return nameGenerator.Generate()
-}
-
-func reader(conn *websocket.Conn) {
+func messageListener(conn *websocket.Conn) {
 	for {
 		var msg models.Message
 		err := conn.ReadJSON(&msg)
