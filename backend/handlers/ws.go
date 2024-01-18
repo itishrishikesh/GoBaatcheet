@@ -9,11 +9,12 @@ import (
 	"GoBaatcheet/config"
 	"GoBaatcheet/constants"
 	"GoBaatcheet/models"
+	"GoBaatcheet/mq"
 
 	"github.com/gorilla/websocket"
 )
 
-var connectedUsers map[string]*websocket.Conn = make(map[string]*websocket.Conn)
+var ConnectedUsers map[string]*websocket.Conn = make(map[string]*websocket.Conn)
 
 func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	if !auth.Authenticate(r) {
@@ -28,7 +29,11 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	connectedUsers[username] = ws
+	ConnectedUsers[username] = ws
+	messages, _ := mq.ReadFromQueue(username) // Todo: handle error
+	for _, v := range messages {
+		_ = sendMessage(v) // Todo: handle error
+	}
 	if err != nil {
 		log.Println("E#1PZUJN - Error while writing message back to client!")
 	}
@@ -57,6 +62,16 @@ func messageListener(conn *websocket.Conn) {
 			Receiver: msg.Receiver,
 			Msg:      msg.Msg,
 		}
-		connectedUsers[msg.Receiver].WriteJSON(msgToSend)
+		_ = sendMessage(msgToSend) // Todo: handle error
 	}
+}
+
+func sendMessage(message models.Message) error {
+	if ConnectedUsers[message.Receiver] != nil {
+		ConnectedUsers[message.Receiver].WriteJSON(message)
+	} else {
+		// Todo: check if message is for a valid user
+		_ = mq.PushToQueue(message) // Todo: handle error
+	}
+	return nil
 }
