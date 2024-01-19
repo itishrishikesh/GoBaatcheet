@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"GoBaatcheet/auth"
 	"GoBaatcheet/config"
@@ -38,6 +39,15 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 		log.Println("E#1PZUJN - Error while writing message back to client!")
 	}
 	messageListener(ws)
+	ws.SetReadDeadline(time.Now().Add(1 * time.Second))
+	ws.SetPingHandler(func(appData string) error {
+		log.Println("Hello Ping", appData)
+		return nil
+	})
+	ws.SetPongHandler(func(appData string) error {
+		log.Println("Hello Pong", appData)
+		return nil
+	})
 }
 
 func readOrAssignUsername(conn *websocket.Conn) (string, error) {

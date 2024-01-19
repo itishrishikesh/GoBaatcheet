@@ -15,7 +15,7 @@ const url = "localhost:9093" // Todo: Move this to a configuration server
 func PushToQueue(message models.Message) error {
 	conn, err := kafka.DialLeader(context.Background(), "tcp", url, message.Receiver, 0)
 	if err != nil {
-		log.Println("Didn't connect to kafka!")
+		log.Println("E#1QX6I2 - Didn't connect to kafka!", err)
 		return fmt.Errorf("failed to push to kafka. %v", err)
 	}
 	tmp, _ := json.Marshal(message) // Todo: Handle error
@@ -26,7 +26,7 @@ func PushToQueue(message models.Message) error {
 func ReadFromQueue(topic string) ([]models.Message, error) {
 	conn, err := kafka.DialLeader(context.Background(), "tcp", url, topic, 0)
 	if err != nil {
-		log.Println("Didn't connect to kafka!")
+		log.Println("E#1QX6IW - Didn't connect to kafka!", err)
 		return nil, fmt.Errorf("failed to push to kafka. %v", err)
 	}
 	messages := []models.Message{}
