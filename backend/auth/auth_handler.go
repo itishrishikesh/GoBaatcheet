@@ -16,7 +16,6 @@ func Authenticate(request *http.Request) bool {
 	if err != nil {
 		panic(err)
 	}
-
 	token := request.URL.Query().Get("access_token")
 	if token == "" {
 		return false
