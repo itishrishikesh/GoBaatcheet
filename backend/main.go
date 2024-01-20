@@ -8,7 +8,7 @@ import (
 	"GoBaatcheet/handlers"
 )
 
-const port = "8080"
+const port = "8080" // Todo: Move this to a centralized config
 
 func main() {
 	// Setup routes

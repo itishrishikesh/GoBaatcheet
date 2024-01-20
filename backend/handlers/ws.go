@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"GoBaatcheet/auth"
 	"GoBaatcheet/config"
@@ -39,15 +38,6 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 		log.Println("E#1PZUJN - Error while writing message back to client!")
 	}
 	messageListener(ws)
-	ws.SetReadDeadline(time.Now().Add(1 * time.Second))
-	ws.SetPingHandler(func(appData string) error {
-		log.Println("Hello Ping", appData)
-		return nil
-	})
-	ws.SetPongHandler(func(appData string) error {
-		log.Println("Hello Pong", appData)
-		return nil
-	})
 }
 
 func readOrAssignUsername(conn *websocket.Conn) (string, error) {
@@ -64,7 +54,7 @@ func messageListener(conn *websocket.Conn) {
 		var msg models.Message
 		err := conn.ReadJSON(&msg)
 		if err != nil {
-			log.Println("E#1PZUA7 - Error while reading message for user:", msg.Sender, err)
+			log.Println("E#1PZUA7 - Error while reading message for user:", err)
 			return
 		}
 		msgToSend := models.Message{
@@ -72,11 +62,17 @@ func messageListener(conn *websocket.Conn) {
 			Receiver: msg.Receiver,
 			Msg:      msg.Msg,
 		}
-		_ = sendMessage(msgToSend) // Todo: handle error
+		err = sendMessage(msgToSend) // Todo: handle error
+		if err != nil {
+			log.Println("E#1QZ3SJ - Error while sending the message", err)
+		}
 	}
 }
 
 func sendMessage(message models.Message) error {
+	if ConnectedUsers[message.Receiver] != nil && !playPingPong(ConnectedUsers[message.Receiver]) {
+		ConnectedUsers[message.Receiver] = nil
+	}
 	if ConnectedUsers[message.Receiver] != nil {
 		ConnectedUsers[message.Receiver].WriteJSON(message)
 	} else {
@@ -84,4 +80,14 @@ func sendMessage(message models.Message) error {
 		_ = mq.PushToQueue(message) // Todo: handle error
 	}
 	return nil
+}
+
+func playPingPong(c *websocket.Conn) bool {
+	if err := c.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
+		return false
+	}
+	if mType, _, err := c.ReadMessage(); err != nil || mType != websocket.PongMessage {
+		return false
+	}
+	return true
 }
