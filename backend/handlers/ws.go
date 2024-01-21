@@ -26,6 +26,9 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 		log.Fatalln("E#1PZU6V - Failed to upgrade request to websocket connection!", err)
 	}
 	username, err := readOrAssignUsername(ws)
+	// if !mq.DoesTopicExists(username) {
+	// 	_ = mq.CreateTopic(username) // Todo: handle error
+	// }
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -70,7 +73,7 @@ func messageListener(conn *websocket.Conn) {
 }
 
 func sendMessage(message models.Message) error {
-	if ConnectedUsers[message.Receiver] != nil && !playPingPong(ConnectedUsers[message.Receiver]) {
+	if ConnectedUsers[message.Receiver] != nil && !isConnectionAlive(ConnectedUsers[message.Receiver]) {
 		ConnectedUsers[message.Receiver] = nil
 	}
 	if ConnectedUsers[message.Receiver] != nil {
@@ -82,7 +85,7 @@ func sendMessage(message models.Message) error {
 	return nil
 }
 
-func playPingPong(c *websocket.Conn) bool {
+func isConnectionAlive(c *websocket.Conn) bool {
 	if err := c.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
 		return false
 	}
