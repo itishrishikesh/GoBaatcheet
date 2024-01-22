@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"GoBaatcheet/auth"
 	"GoBaatcheet/config"
@@ -26,14 +27,14 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 		log.Fatalln("E#1PZU6V - Failed to upgrade request to websocket connection!", err)
 	}
 	username, err := readOrAssignUsername(ws)
-	// if !mq.DoesTopicExists(username) {
-	// 	_ = mq.CreateTopic(username) // Todo: handle error
-	// }
 	if err != nil {
 		log.Fatalln(err)
 	}
 	ConnectedUsers[username] = ws
-	messages, _ := mq.ReadFromQueue(username) // Todo: handle error
+	messages, err := mq.ReadFromQueue(username)
+	if err != nil {
+		log.Println("E#1R2MKV - Failed to read from queue", err)
+	}
 	for _, v := range messages {
 		_ = sendMessage(v) // Todo: handle error
 	}
@@ -65,7 +66,7 @@ func messageListener(conn *websocket.Conn) {
 			Receiver: msg.Receiver,
 			Msg:      msg.Msg,
 		}
-		err = sendMessage(msgToSend) // Todo: handle error
+		err = sendMessage(msgToSend)
 		if err != nil {
 			log.Println("E#1QZ3SJ - Error while sending the message", err)
 		}
@@ -77,7 +78,10 @@ func sendMessage(message models.Message) error {
 		ConnectedUsers[message.Receiver] = nil
 	}
 	if ConnectedUsers[message.Receiver] != nil {
-		ConnectedUsers[message.Receiver].WriteJSON(message)
+		err := ConnectedUsers[message.Receiver].WriteJSON(message)
+		if err != nil {
+			log.Println("E#1R2MTS - Failed to write JSON to websocket.", err)
+		}
 	} else {
 		// Todo: check if message is for a valid user
 		_ = mq.PushToQueue(message) // Todo: handle error
@@ -86,10 +90,14 @@ func sendMessage(message models.Message) error {
 }
 
 func isConnectionAlive(c *websocket.Conn) bool {
+	c.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	if err := c.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
+		log.Println("TMP Log: Error.", err)
 		return false
 	}
-	if mType, _, err := c.ReadMessage(); err != nil || mType != websocket.PongMessage {
+	c.SetReadDeadline(time.Now().Add(10 * time.Second))
+	if _, _, err := c.ReadMessage(); err != nil {
+		log.Println("TMP Log: Error.", err)
 		return false
 	}
 	return true
