@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -21,7 +22,11 @@ func PushToQueue(message models.Message) error {
 		return fmt.Errorf("failed to push to kafka. %v", err)
 	}
 	tmp, _ := json.Marshal(message) // Todo: Handle error
-	_, _ = conn.Write(tmp)          // Todo: Handle error
+	_, err = conn.Write(tmp)
+	if err != nil {
+		log.Println("E#1R2MS5 - Failed to write to Kafka.", err)
+		return fmt.Errorf("failed to write message to kafka. %v", err)
+	}
 	return nil
 }
 
@@ -33,11 +38,23 @@ func ReadFromQueue(email string) ([]models.Message, error) {
 	}
 	messages := []models.Message{}
 	buffer := make([]byte, 10e3)
-	for _, err := conn.Read(buffer); err != nil; {
+
+	conn.SetDeadline(time.Now().Add(10 * time.Second))
+	batch := conn.ReadBatch(10e3, 1e6)
+
+	for {
+		n, err := batch.Read(buffer)
+		if err != nil {
+			break
+		}
 		var msg models.Message
-		_ = json.Unmarshal(buffer, &msg) // Todo: Handle error
+		err = json.Unmarshal(buffer[:n], &msg)
+		if err != nil {
+			log.Println("E#1R2O6A - Error while unmarshaling a message from queue", err)
+		}
 		messages = append(messages, msg)
 	}
+
 	return messages, nil
 }
 
