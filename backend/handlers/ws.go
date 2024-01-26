@@ -1,21 +1,20 @@
 package handlers
 
 import (
-	"fmt"
-	"log"
-	"net/http"
-	"time"
-
 	"GoBaatcheet/auth"
 	"GoBaatcheet/config"
 	"GoBaatcheet/constants"
 	"GoBaatcheet/models"
 	"GoBaatcheet/mq"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
 
 	"github.com/gorilla/websocket"
 )
 
-var ConnectedUsers map[string]*websocket.Conn = make(map[string]*websocket.Conn)
+var ConnectedUsers = make(map[string]*Client)
 
 func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	if !auth.Authenticate(r) {
@@ -30,7 +29,15 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	ConnectedUsers[username] = ws
+	ConnectedUsers[username] = &Client{
+		Conn:     ws,
+		Send:     make(chan []byte),
+		Username: username,
+	}
+
+	go ConnectedUsers[username].ReadPump()
+	go ConnectedUsers[username].WritePump()
+
 	messages, err := mq.ReadFromQueue(username)
 	if err != nil {
 		log.Println("E#1R2MKV - Failed to read from queue", err)
@@ -41,7 +48,7 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("E#1PZUJN - Error while writing message back to client!")
 	}
-	messageListener(ws)
+	//messageListener(ws)
 }
 
 func readOrAssignUsername(conn *websocket.Conn) (string, error) {
@@ -74,11 +81,13 @@ func messageListener(conn *websocket.Conn) {
 }
 
 func sendMessage(message models.Message) error {
-	if ConnectedUsers[message.Receiver] != nil && !isConnectionAlive(ConnectedUsers[message.Receiver]) {
+	if ConnectedUsers[message.Receiver] != nil {
 		ConnectedUsers[message.Receiver] = nil
 	}
 	if ConnectedUsers[message.Receiver] != nil {
-		err := ConnectedUsers[message.Receiver].WriteJSON(message)
+		// err := ConnectedUsers[message.Receiver].Conn.WriteJSON(message)
+		b, err := json.Marshal(message)
+		ConnectedUsers[message.Receiver].Send <- b
 		if err != nil {
 			log.Println("E#1R2MTS - Failed to write JSON to websocket.", err)
 		}
@@ -87,18 +96,4 @@ func sendMessage(message models.Message) error {
 		_ = mq.PushToQueue(message) // Todo: handle error
 	}
 	return nil
-}
-
-func isConnectionAlive(c *websocket.Conn) bool {
-	c.SetWriteDeadline(time.Now().Add(10 * time.Second))
-	if err := c.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
-		log.Println("TMP Log: Error.", err)
-		return false
-	}
-	c.SetReadDeadline(time.Now().Add(10 * time.Second))
-	if _, _, err := c.ReadMessage(); err != nil {
-		log.Println("TMP Log: Error.", err)
-		return false
-	}
-	return true
 }
