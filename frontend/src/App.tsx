@@ -3,7 +3,7 @@ import { UsernameHolder } from './component/UsernameHolder'
 import { ChatContainer } from './component/ChatContainer'
 import { User } from './models/User'
 import { Message } from './models/Message'
-import { Authorizer, AuthorizerProvider, useAuthorizer } from '@authorizerdev/authorizer-react'
+import { Authorizer, AuthorizerProvider } from '@authorizerdev/authorizer-react'
 
 function App() {
   const [username, setUsername] = useState<string>("")
@@ -12,7 +12,7 @@ function App() {
   const [messages, setMessages] = useState<Message[]>([])
 
   const setupConnection = (response: any) => {
-    console.log(response)
+    console.log("authorizer response", response)
     const localUsername = response.user.email
     const ws = new WebSocket("ws://localhost:8080/ws?access_token=" + response.access_token);
     setUsername(localUsername)
