@@ -34,12 +34,12 @@ func ReadFromQueue(email string) ([]models.Message, error) {
 	conn, err := kafka.DialLeader(context.Background(), "tcp", url, emailToHash(email), 0)
 	if err != nil {
 		log.Println("E#1QX6IW - Didn't connect to kafka!", err)
-		return nil, fmt.Errorf("failed to push to kafka. %v", err)
+		return nil, fmt.Errorf("failed to read from kafka. %v", err)
 	}
-	messages := []models.Message{}
+	var messages = make([]models.Message, 0)
 	buffer := make([]byte, 10e3)
 
-	conn.SetDeadline(time.Now().Add(10 * time.Second))
+	_ = conn.SetDeadline(time.Now().Add(10 * time.Second))
 	batch := conn.ReadBatch(10e3, 1e6)
 
 	for {
