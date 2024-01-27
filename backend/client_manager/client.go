@@ -1,7 +1,8 @@
-package handlers
+package client_manager
 
 import (
 	"GoBaatcheet/models"
+	"GoBaatcheet/mq"
 	"bytes"
 	"encoding/json"
 	"github.com/gorilla/websocket"
@@ -41,13 +42,11 @@ func (c *Client) ReadPump() {
 	c.Conn.SetReadLimit(maxMessageSize)
 	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.Conn.SetPongHandler(func(string) error { c.Conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
-	for {
+	for ConnectedUsers[c.Username] != nil {
 		_, message, err := c.Conn.ReadMessage()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("error: %v", err)
-			}
-			break
+			log.Println("Error while reading message", err)
+			ConnectedUsers[c.Username] = nil
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		var msg models.Message
@@ -55,8 +54,12 @@ func (c *Client) ReadPump() {
 		if err != nil {
 			log.Println("Error while marshaling", err)
 		}
-		ConnectedUsers[msg.Receiver].Send <- message
-		//c.hub.broadcast <- message
+		if ConnectedUsers[msg.Receiver] != nil {
+			ConnectedUsers[msg.Receiver].Send <- message
+		} else {
+			_ = mq.PushToQueue(msg)
+			break
+		}
 	}
 }
 
