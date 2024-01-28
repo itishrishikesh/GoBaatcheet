@@ -17,7 +17,7 @@ var bypassForTest = true
 
 func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	if !auth.Authenticate(r) && !bypassForTest {
-		w.WriteHeader(constants.HTTP_FORBIDDEN)
+		w.WriteHeader(constants.HttpForbidden)
 	}
 	config.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	ws, err := config.Upgrader.Upgrade(w, r, nil)

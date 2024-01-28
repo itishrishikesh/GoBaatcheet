@@ -1,9 +1,11 @@
 package mq
 
 import (
+	"GoBaatcheet/constants"
 	"GoBaatcheet/models"
 	"context"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -31,30 +33,35 @@ func PushToQueue(message models.Message) error {
 }
 
 func ReadFromQueue(email string) ([]models.Message, error) {
-	conn, err := kafka.DialLeader(context.Background(), "tcp", url, emailToHash(email), 0)
+	queue, err := kafka.DialLeader(context.Background(), "tcp", url, emailToHash(email), 0)
+	qConfirm, err := kafka.DialLeader(context.Background(), "tcp", url, emailToHash(email), 1)
 	if err != nil {
 		log.Println("E#1QX6IW - Didn't connect to kafka!", err)
 		return nil, fmt.Errorf("failed to read from kafka. %v", err)
 	}
+	mConfirm, _ := qConfirm.ReadMessage(constants.MaxMessageSize) // Todo: This is incorrect, correct this.
 	var messages = make([]models.Message, 0)
-	buffer := make([]byte, 10e3)
-
-	_ = conn.SetDeadline(time.Now().Add(10 * time.Second))
-	batch := conn.ReadBatch(10e3, 1e6)
-
-	for {
-		n, err := batch.Read(buffer)
-		if err != nil {
-			break
+	_ = queue.SetDeadline(time.Now().Add(10 * time.Second))
+	batch := queue.ReadBatch(constants.MinMessageSize, constants.MaxMessageSize)
+	for m, err := batch.ReadMessage(); err != nil; {
+		if m.Offset <= int64(binary.LittleEndian.Uint16(mConfirm.Value)) {
+			continue
 		}
 		var msg models.Message
-		err = json.Unmarshal(buffer[:n], &msg)
+		err = json.Unmarshal(m.Value, &msg)
 		if err != nil {
-			log.Println("E#1R2O6A - Error while unmarshaling a message from queue", err)
+			log.Println("E#1R2O6A - Error while unmarshalling a message from queue", err)
 		}
 		messages = append(messages, msg)
+		// Review here for more details: https://stackoverflow.com/a/35371760/5621167
+		offset := make([]byte, binary.MaxVarintLen64)
+		binary.LittleEndian.PutUint64(offset, uint64(m.Offset))
+		// convertOffSetBack = int64(binary.LittleEndian.Uint64(offset))
+		_, err := qConfirm.Write(offset)
+		if err != nil {
+			return nil, err
+		}
 	}
-
 	return messages, nil
 }
 

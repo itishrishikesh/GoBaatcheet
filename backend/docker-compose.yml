@@ -27,6 +27,10 @@ services:
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
     depends_on:
       - zookeeper
+#  authorizer:
+#    image: lakhansamani/authorizer:latest
+#    ports:
+#      - "3000:3000"
 volumes:
   kafka-volume:
   zookeeper-volume:
