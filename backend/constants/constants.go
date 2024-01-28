@@ -1,4 +1,6 @@
 package constants
 
-const HTTP_FORBIDDEN = 403
-const EMPTY_STR = ""
+const HttpForbidden = 403
+const EmptyStr = ""
+const MaxMessageSize = 10e3
+const MinMessageSize = 1e6

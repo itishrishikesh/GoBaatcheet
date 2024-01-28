@@ -12,7 +12,7 @@ const clientId = "c87ad9f9-e076-429f-b175-777e73570a9b" // Todo: Move this to ce
 
 func Authenticate(request *http.Request) bool {
 	defaultHeaders := map[string]string{}
-	client, err := authorizer.NewAuthorizerClient(clientId, authorizerServer, constants.EMPTY_STR, defaultHeaders)
+	client, err := authorizer.NewAuthorizerClient(clientId, authorizerServer, constants.EmptyStr, defaultHeaders)
 	if err != nil {
 		panic(err)
 	}
