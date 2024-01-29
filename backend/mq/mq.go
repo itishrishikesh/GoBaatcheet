@@ -32,31 +32,56 @@ func PushToQueue(message models.Message) error {
 	return nil
 }
 
-func ReadFromQueue(email string) ([]models.Message, error) {
-	queue, err := kafka.DialLeader(context.Background(), "tcp", url, emailToHash(email), 0)
-	qConfirm, err := kafka.DialLeader(context.Background(), "tcp", url, emailToHash(email), 1)
+func ConnectToKafka(topic string) (queue, qConfirm *kafka.Conn) {
+	// I'm creating two queues, one for storing offline messages and one which will store the last updated offset.
+	// queue --> Stores messages pushed for an offline username.
+	queue, err := kafka.DialLeader(context.Background(), "tcp", url, emailToHash(topic), 0)
+	// qConfirm --> Stores offset of the last read message from queue above.
+	qConfirm, err = kafka.DialPartition(context.Background(), "tcp", url, kafka.Partition{Topic: emailToHash(topic), ID: 1, Leader: queue.Broker()})
 	if err != nil {
 		log.Println("E#1QX6IW - Didn't connect to kafka!", err)
-		return nil, fmt.Errorf("failed to read from kafka. %v", err)
+		//return nil, fmt.Errorf("failed to read from kafka. %v", err)
 	}
-	mConfirm, _ := qConfirm.ReadMessage(constants.MaxMessageSize) // Todo: This is incorrect, correct this.
+	return
+}
+
+func ReadFromQueue(topic string) ([]models.Message, error) {
+	queue, qConfirm := ConnectToKafka(topic)
+	// I'm checking whether we have message in the qConfirm or not
+	var mConfirm kafka.Message
+	if i, _ := qConfirm.ReadLastOffset(); i > 0 {
+		mConfirm, _ = qConfirm.ReadMessage(constants.MaxMessageSize) // Todo: This is incorrect, correct this.
+	} else {
+		mConfirm = kafka.Message{Offset: 0}
+	}
+
+	// Read messages from queue.
+	// messages variable will store the final list of messages that will be sent to user.
 	var messages = make([]models.Message, 0)
+	// setting up timeout for queue
 	_ = queue.SetDeadline(time.Now().Add(10 * time.Second))
+	// read batch of messages from queue.
 	batch := queue.ReadBatch(constants.MinMessageSize, constants.MaxMessageSize)
-	for m, err := batch.ReadMessage(); err != nil; {
+	// iterate over all messages received.
+	for m, err := batch.ReadMessage(); err != nil && m.Offset > 0; {
+		// check if the offset of current message is less than offset last stored in mConfirm queue.
+		// this tells us whether the message is already read by the user.
 		if m.Offset <= int64(binary.LittleEndian.Uint16(mConfirm.Value)) {
 			continue
 		}
+		// temp variable to store the current message value
 		var msg models.Message
+		// read the message value
 		err = json.Unmarshal(m.Value, &msg)
 		if err != nil {
 			log.Println("E#1R2O6A - Error while unmarshalling a message from queue", err)
 		}
+		// append the message value in the final list
 		messages = append(messages, msg)
+		// store the offset of current message and push it mConfirm indicating that current message has been read.
 		// Review here for more details: https://stackoverflow.com/a/35371760/5621167
 		offset := make([]byte, binary.MaxVarintLen64)
 		binary.LittleEndian.PutUint64(offset, uint64(m.Offset))
-		// convertOffSetBack = int64(binary.LittleEndian.Uint64(offset))
 		_, err := qConfirm.Write(offset)
 		if err != nil {
 			return nil, err
