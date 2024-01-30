@@ -1,7 +1,7 @@
 package mq
 
 import (
-	"GoBaatcheet/constants"
+	"GoBaatcheet/helpers"
 	"GoBaatcheet/models"
 	"context"
 	"crypto/sha256"
@@ -50,7 +50,7 @@ func ReadFromQueue(topic string) ([]models.Message, error) {
 	// I'm checking whether we have message in the qConfirm or not
 	var mConfirm kafka.Message
 	if i, _ := qConfirm.ReadLastOffset(); i > 0 {
-		mConfirm, _ = qConfirm.ReadMessage(constants.MaxMessageSize) // Todo: This is incorrect, correct this.
+		mConfirm, _ = qConfirm.ReadMessage(helpers.MaxMessageSize) // Todo: This is incorrect, correct this.
 	} else {
 		mConfirm = kafka.Message{Offset: 0}
 	}
@@ -61,7 +61,7 @@ func ReadFromQueue(topic string) ([]models.Message, error) {
 	// setting up timeout for queue
 	_ = queue.SetDeadline(time.Now().Add(10 * time.Second))
 	// read batch of messages from queue.
-	batch := queue.ReadBatch(constants.MinMessageSize, constants.MaxMessageSize)
+	batch := queue.ReadBatch(helpers.MinMessageSize, helpers.MaxMessageSize)
 	// iterate over all messages received.
 	for m, err := batch.ReadMessage(); err != nil && m.Offset > 0; {
 		// check if the offset of current message is less than offset last stored in mConfirm queue.

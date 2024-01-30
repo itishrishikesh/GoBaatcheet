@@ -1,4 +1,4 @@
-package constants
+package helpers
 
 const HttpForbidden = 403
 const EmptyStr = ""
