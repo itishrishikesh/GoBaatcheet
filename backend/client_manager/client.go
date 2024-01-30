@@ -45,20 +45,20 @@ func (c *Client) ReadPump() {
 	for ConnectedUsers[c.Username] != nil {
 		_, message, err := c.Conn.ReadMessage()
 		if err != nil {
-			log.Println("Error while reading message", err)
+			log.Println("Connection is closed.", err)
 			ConnectedUsers[c.Username] = nil
+			break
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		var msg models.Message
 		err = json.Unmarshal(message, &msg)
 		if err != nil {
-			log.Println("Error while marshaling", err)
+			log.Println("Marshalling error.", err)
 		}
 		if ConnectedUsers[msg.Receiver] != nil {
 			ConnectedUsers[msg.Receiver].Send <- message
 		} else {
 			_ = mq.PushToQueue(msg)
-			break
 		}
 	}
 }
@@ -72,10 +72,13 @@ func (c *Client) WritePump() {
 	for {
 		select {
 		case message, ok := <-c.Send:
-			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if ConnectedUsers[c.Username] == nil {
+				_ = SendMessage(models.FromBytes(message))
+				continue
+			}
+			_ = c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
-				// The hub closed the channel.
-				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
@@ -83,13 +86,13 @@ func (c *Client) WritePump() {
 			if err != nil {
 				return
 			}
-			w.Write(message)
+			_, _ = w.Write(message)
 
 			// Add queued chat messages to the current websocket message.
 			n := len(c.Send)
 			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-c.Send)
+				_, _ = w.Write(newline)
+				_, _ = w.Write(<-c.Send)
 			}
 
 			if err := w.Close(); err != nil {
@@ -98,7 +101,8 @@ func (c *Client) WritePump() {
 		case <-ticker.C:
 			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
+				ConnectedUsers[c.Username] = nil
+				//return
 			}
 		}
 	}

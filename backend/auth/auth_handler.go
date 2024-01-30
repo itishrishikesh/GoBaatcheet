@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"GoBaatcheet/constants"
+	"GoBaatcheet/helpers"
 	"net/http"
 
 	authorizer "github.com/authorizerdev/authorizer-go"
@@ -12,7 +12,7 @@ const clientId = "c87ad9f9-e076-429f-b175-777e73570a9b" // Todo: Move this to ce
 
 func Authenticate(request *http.Request) bool {
 	defaultHeaders := map[string]string{}
-	client, err := authorizer.NewAuthorizerClient(clientId, authorizerServer, constants.EmptyStr, defaultHeaders)
+	client, err := authorizer.NewAuthorizerClient(clientId, authorizerServer, helpers.EmptyStr, defaultHeaders)
 	if err != nil {
 		panic(err)
 	}

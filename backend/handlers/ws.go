@@ -4,7 +4,7 @@ import (
 	"GoBaatcheet/auth"
 	. "GoBaatcheet/client_manager"
 	"GoBaatcheet/config"
-	"GoBaatcheet/constants"
+	"GoBaatcheet/helpers"
 	"GoBaatcheet/models"
 	"GoBaatcheet/mq"
 	"fmt"
@@ -17,7 +17,7 @@ var bypassForTest = true
 
 func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	if !auth.Authenticate(r) && !bypassForTest {
-		w.WriteHeader(constants.HttpForbidden)
+		w.WriteHeader(helpers.HttpForbidden)
 	}
 	config.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	ws, err := config.Upgrader.Upgrade(w, r, nil)
@@ -33,7 +33,6 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 		Send:     make(chan []byte),
 		Username: username,
 	}
-	log.Println("Client is created.", ConnectedUsers[username])
 	messages, err := mq.ReadFromQueue(username)
 	if err != nil {
 		log.Println("E#1R2MKV - Failed to read from queue", err)
