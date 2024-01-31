@@ -69,7 +69,7 @@ func (c *Client) WritePump() {
 		ticker.Stop()
 		c.Conn.Close()
 	}()
-	for {
+	for c != nil {
 		select {
 		case message, ok := <-c.Send:
 			if ConnectedUsers[c.Username] == nil {
@@ -99,7 +99,7 @@ func (c *Client) WritePump() {
 				return
 			}
 		case <-ticker.C:
-			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				ConnectedUsers[c.Username] = nil
 				//return

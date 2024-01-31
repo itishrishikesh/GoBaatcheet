@@ -4,9 +4,7 @@ import (
 	"GoBaatcheet/helpers"
 	"GoBaatcheet/models"
 	"context"
-	"crypto/sha256"
 	"encoding/binary"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -29,6 +27,7 @@ func PushToQueue(message models.Message) error {
 		log.Println("E#1R2MS5 - Failed to write to Kafka.", err)
 		return fmt.Errorf("failed to write message to kafka. %v", err)
 	}
+	_ = conn.Close()
 	return nil
 }
 
@@ -92,8 +91,9 @@ func ReadFromQueue(topic string) ([]models.Message, error) {
 
 // emailToHash converts an email to a SHA256 hash and returns it as a hexadecimal string
 func emailToHash(email string) string {
-	emailBytes := []byte(email)
-	hashBytes := sha256.Sum256(emailBytes)
-	hashString := hex.EncodeToString(hashBytes[:])
-	return hashString
+	//emailBytes := []byte(email)
+	//hashBytes := sha256.Sum256(emailBytes)
+	//hashString := hex.EncodeToString(hashBytes[:])
+	//return hashString
+	return email
 }

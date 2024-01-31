@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"sync"
+	"time"
 )
 
 const Alice = "alice"
@@ -79,9 +80,8 @@ func TestIfMessagesArePushedToQueue() {
 	//	return
 	//}
 	//log.Println("Message read from kafka (should be for bob)", message)
-	fromQueue, err := mq.ReadFromQueue(Bob)
-	if err != nil {
-		return
+	for fromQueue, err := mq.ReadFromQueue(Bob); len(fromQueue) == 0 && err == nil; {
+		log.Println("fromQueue", fromQueue)
+		time.Sleep(time.Second)
 	}
-	log.Println("fromQueue", fromQueue)
 }
