@@ -2,7 +2,6 @@ package main
 
 import (
 	"GoBaatcheet/models"
-	"GoBaatcheet/mq"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
@@ -11,7 +10,7 @@ import (
 )
 
 const Alice = "alice"
-const Bob = "bob"
+const Bob = "bobby"
 
 var wg sync.WaitGroup
 
@@ -71,17 +70,10 @@ func TestWebsocketOneToOneChat() {
 func TestIfMessagesArePushedToQueue() {
 	wsAlice, wsBob := SetupDummyWebsocketConnections()
 	_ = wsBob.Close()
-	WriteToSocket(wsAlice, Alice, Bob, "Alice sends message to bob, when he's offline!")
-	//queue, _ := mq.ConnectToKafka(Bob)
-	//queue.SetDeadline(time.Now().Add(2 * time.Second))
-	//message, err := queue.ReadMessage(constants.MaxMessageSize)
-	//if err != nil {
-	//	log.Println("error while reading from kafka", err)
-	//	return
-	//}
-	//log.Println("Message read from kafka (should be for bob)", message)
-	for fromQueue, err := mq.ReadFromQueue(Bob); len(fromQueue) == 0 && err == nil; {
-		log.Println("fromQueue", fromQueue)
-		time.Sleep(time.Second)
-	}
+	WriteToSocket(wsAlice, Alice, Bob, "Second")
+	time.Sleep(5 * time.Second)
+	_, wsBob = SetupDummyWebsocketConnections()
+	wg.Add(1)
+	go ReadForSocket(wsBob)
+	wg.Wait()
 }
