@@ -33,16 +33,7 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 		Send:     make(chan []byte),
 		Username: username,
 	}
-	messages, err := mq.ReadFromQueue(username)
-	if err != nil {
-		log.Println("E#1R2MKV - Failed to read from queue", err)
-	}
-	for _, v := range messages {
-		_ = SendMessage(v) // Todo: handle error
-	}
-	if err != nil {
-		log.Println("E#1PZUJN - Error while writing message back to client!")
-	}
+	go mq.ReadFromQueue(username, ConnectedUsers[username].Send)
 	go ConnectedUsers[username].ReadPump()
 	go ConnectedUsers[username].WritePump()
 }
