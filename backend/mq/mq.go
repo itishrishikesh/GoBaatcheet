@@ -44,15 +44,21 @@ func ConnectToKafka(topic string) *kafka.Reader {
 		Partition:      0,
 		MaxBytes:       helpers.MaxMessageSize,
 		CommitInterval: time.Second,
-		GroupID:        "gobaatcheet-reader",
+		GroupID:        "message-reader",
 	})
 
 }
 
 func ReadFromQueue(topic string, client chan []byte) {
 	queue := ConnectToKafka(topic)
-	message, _ := queue.ReadMessage(context.Background())
-	client <- message.Value
+	for {
+		message, err := queue.ReadMessage(context.Background())
+		if err != nil {
+			log.Println("Error while reading from Kafka for", topic)
+			break
+		}
+		client <- message.Value
+	}
 }
 
 func emailToHash(email string) string {
