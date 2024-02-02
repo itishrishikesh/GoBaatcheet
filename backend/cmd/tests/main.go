@@ -10,7 +10,7 @@ import (
 )
 
 const Alice = "alice"
-const Bob = "bobby"
+const Bob = "bob"
 
 var wg sync.WaitGroup
 
@@ -21,19 +21,20 @@ func main() {
 
 func SetupDummyWebsocketConnections() (*websocket.Conn, *websocket.Conn) {
 	// Establish Connection 1.
-	url := "ws://localhost:8080/ws"
-	ws1, _, err := websocket.DefaultDialer.Dial(url, nil)
-	if err != nil {
-		fmt.Println("E#1Q3MKH - Unable to connect to websocket server. E:", err)
-	}
+	ws1 := SetupWebsocketConnection(Alice)
 	// Establish Connection 2.
-	ws2, _, err := websocket.DefaultDialer.Dial(url, nil)
+	ws2 := SetupWebsocketConnection(Bob)
+	return ws1, ws2
+}
+
+func SetupWebsocketConnection(username string) *websocket.Conn {
+	url := "ws://localhost:8080/ws"
+	ws, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		fmt.Println("E#1Q3MKH - Unable to connect to websocket server. E:", err)
 	}
-	_ = ws1.WriteJSON(&models.User{Username: Alice})
-	_ = ws2.WriteJSON(&models.User{Username: Bob})
-	return ws1, ws2
+	_ = ws.WriteJSON(&models.User{Username: username})
+	return ws
 }
 
 func ReadForSocket(ws *websocket.Conn) {
@@ -68,12 +69,11 @@ func TestWebsocketOneToOneChat() {
 }
 
 func TestIfMessagesArePushedToQueue() {
-	wsAlice, wsBob := SetupDummyWebsocketConnections()
-	_ = wsBob.Close()
-	WriteToSocket(wsAlice, Alice, Bob, "Second")
-	time.Sleep(5 * time.Second)
-	_, wsBob = SetupDummyWebsocketConnections()
-	wg.Add(1)
+	wsAlice := SetupWebsocketConnection(Alice)
+	WriteToSocket(wsAlice, Alice, Bob, "Time "+time.Now().UTC().String())
+	WriteToSocket(wsAlice, Alice, Bob, "Time "+time.Now().UTC().String())
+	wsBob := SetupWebsocketConnection(Bob)
+	wg.Add(2)
 	go ReadForSocket(wsBob)
 	wg.Wait()
 }
