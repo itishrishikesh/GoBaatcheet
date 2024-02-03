@@ -27,10 +27,29 @@ services:
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
     depends_on:
       - zookeeper
-#  authorizer:
-#    image: lakhansamani/authorizer:latest
-#    ports:
-#      - "3000:3000"
+  authorizer:
+    image: lakhansamani/authorizer:latest
+    ports:
+      - "8082:8082"
+    environment:
+      - ENV=production
+      - DATABASE_URL=data.db
+      - DATABASE_TYPE=sqlite
+      - DISABLE_PLAYGROUND=true
+      - ADMIN_SECRET=1234
+      - PORT=8082
+  frontend:
+    build: frontend
+    ports:
+      - "3000:3000"
+#    depends_on:
+#      - backend
+  backend:
+    build: backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - kafka
 volumes:
   kafka-volume:
   zookeeper-volume:
