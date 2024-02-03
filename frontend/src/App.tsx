@@ -4,6 +4,7 @@ import { ChatContainer } from './component/ChatContainer'
 import { User } from './models/User'
 import { Message } from './models/Message'
 import { Authorizer, AuthorizerProvider } from '@authorizerdev/authorizer-react'
+import "./App.css"
 
 function App() {
   const [username, setUsername] = useState<string>("")
@@ -51,17 +52,18 @@ function App() {
             <ChatContainer send={send} messages={messages} />
           </div>
           :
-          // <div>Please  <button onClick={() => logIn()}>click here and enter</button> username!</div>
-          <AuthorizerProvider 
-            config={{
-              authorizerURL: 'http://localhost:8082',
-              redirectURL: window.location.origin,
-              clientID: 'c87ad9f9-e076-429f-b175-777e73570a9b'
-            }}>
+          <div className="login-outer-container">
+            <AuthorizerProvider
+                config={{
+                  authorizerURL: 'http://localhost:8082',
+                  redirectURL: window.location.origin,
+                  clientID: '7ea6b8a6-77f5-432e-b501-a51fe02c40c7'
+                }}>
 
-            <Authorizer onLogin={(response) => setupConnection(response)} onSignup={(response) => setupConnection(response)} />
-            
-          </AuthorizerProvider>
+              <Authorizer onLogin={(response) => setupConnection(response)} onSignup={(response) => setupConnection(response)} />
+
+            </AuthorizerProvider>
+          </div>
       }
     </>
   )
